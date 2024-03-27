@@ -71,18 +71,26 @@ def update_data():
 
                 else:
                     print("Insufficient MPU data elements.")
-            elif "Lat: " in line:
-                current_lat = float(line.split(": ")[1])
+            elif "Lat:" in line:
+                current_lat = float(line.split("Lat: ")[1])
                 gps_vars['lat_var'].set(f"Latitude: {current_lat}")
-            elif "Lng: " in line:
-                current_lng = float(line.split(": ")[1])
+            elif "Lng:" in line:
+                current_lng = float(line.split("Lng: ")[1])
                 gps_vars['lng_var'].set(f"Longitude: {current_lng}")
-            elif "Altitude: " in line:
-                current_altitude = float(line.split(": ")[1])
-                gps_vars['alt_var'].set(f"Altitude: {current_altitude} meters")
-            elif "Satellites: " in line:
-                current_satellites = int(line.split(": ")[1])
-                gps_vars['sat_var'].set(f"Satellites: {current_satellites}")
+            elif "Altitude:" in line:
+                alt_data = line.split("Altitude: ")[1]
+                if alt_data != " data is not valid.":
+                    current_altitude = float(alt_data)
+                    gps_vars['alt_var'].set(f"Altitude: {current_altitude} meters")
+                else:
+                    gps_vars['alt_var'].set(alt_data)
+            elif "Satellites:" in line:
+                sat_data = line.split("Satellites: ")[1]
+                if sat_data != " data is not valid.":
+                    current_satellites = int(sat_data)
+                    gps_vars['sat_var'].set(f"Satellites: {current_satellites}")
+                else:
+                    gps_vars['sat_var'].set(sat_data)
             else:
                 print(f"Unrecognized line format: {line}")
         except ValueError as e:
