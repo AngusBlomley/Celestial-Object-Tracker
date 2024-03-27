@@ -54,12 +54,12 @@ def update_data():
     line = safe_read_line()
     if line:
         try:
-            if line.startswith("MPU,"):
-                # Split the line and convert values to appropriate types (float for accelerometer and gyro values)
-                parts = line.split(',')
-                if len(parts) >= 7:  # Make sure there are enough parts for the MPU data
-                    accel_x, accel_y, accel_z = float(parts[1]), float(parts[2]), float(parts[3])
-                    gyro_x, gyro_y, gyro_z = float(parts[4]), float(parts[5]), float(parts[6])
+            if line.startswith("MPU:"):
+                # Remove "MPU: " prefix and then split the line
+                parts = line.replace("MPU: ", "").split(',')
+                if len(parts) == 6:  # Ensure there are exactly 6 parts for the MPU data
+                    accel_x, accel_y, accel_z = float(parts[0]), float(parts[1]), float(parts[2])
+                    gyro_x, gyro_y, gyro_z = float(parts[3]), float(parts[4]), float(parts[5])
 
                     # Update the GUI elements with new data
                     mpu_vars['accel_x_var'].set(f"Accel X: {accel_x}")
@@ -71,18 +71,30 @@ def update_data():
 
                 else:
                     print("Insufficient MPU data elements.")
-            elif "Lat: " in line:
-                current_lat = float(line.split(": ")[1])
+            elif "Lat:" in line:
+                current_lat = float(line.split("Lat: ")[1])
                 gps_vars['lat_var'].set(f"Latitude: {current_lat}")
-            elif "Lng: " in line:
-                current_lng = float(line.split(": ")[1])
+            elif "Lng:" in line:
+                current_lng = float(line.split("Lng: ")[1])
                 gps_vars['lng_var'].set(f"Longitude: {current_lng}")
-            elif "Altitude: " in line:
-                current_altitude = float(line.split(": ")[1])
-                gps_vars['alt_var'].set(f"Altitude: {current_altitude} meters")
-            elif "Satellites: " in line:
-                current_satellites = int(line.split(": ")[1])
-                gps_vars['sat_var'].set(f"Satellites: {current_satellites}")
+            elif "Altitude:" in line:
+                alt_data = line.split("Altitude: ")[1]
+                # Remove the " Meters" text to isolate the numeric value
+                alt_data = alt_data.replace(" Meters", "")
+                try:
+                    current_altitude = float(alt_data)
+                    gps_vars['alt_var'].set(f"Altitude: {current_altitude} Meters")
+                except ValueError:
+                    # Handle the case where alt_data cannot be converted to float
+                    print(f"Could not convert altitude to float: '{alt_data}'")
+                    gps_vars['alt_var'].set("Altitude data is not valid.")
+            elif "Satellites:" in line:
+                sat_data = line.split("Satellites: ")[1]
+                if sat_data != " data is not valid.":
+                    current_satellites = int(sat_data)
+                    gps_vars['sat_var'].set(f"Satellites: {current_satellites}")
+                else:
+                    gps_vars['sat_var'].set(sat_data)
             else:
                 print(f"Unrecognized line format: {line}")
         except ValueError as e:
