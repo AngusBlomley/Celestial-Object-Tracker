@@ -119,16 +119,23 @@ def track_celestial_object(body, lat, lng):
     observer = earth + observer_location
     astrometric = observer.at(t).observe(body)
     alt, az, dist = astrometric.apparent().altaz()
-    alt_int = int(alt.degrees)
-    az_int = int(az.degrees)
-    send_str = f"MOT,{alt_int},{az_int}\n"
+    alt_deg = int(alt.degrees)
+    az_deg = int(az.degrees)
+    # Ensure the command is formatted as "MOT,azimuth,elevation\n"
+    send_str = f"MOT,{az_deg},{alt_deg}\n"
     ser.write(send_str.encode('utf-8'))
 
-def button_command(body):
+def button_command(body, name):  # Add the 'name' parameter
     if current_lat is not None and current_lng is not None:
         track_celestial_object(body, current_lat, current_lng)
+        print(f"Moving towards {name}...")  # Use the 'name' parameter here
     else:
         print("GPS data not available.")
+
+def return_to_home():
+    # Sends "RTH\n" to signal the Arduino to return motors to the home position
+    send_str = "RTH\n"
+    ser.write(send_str.encode('utf-8'))
 
 def main():
     global gps_vars, mpu_vars
@@ -138,6 +145,10 @@ def main():
     data_frame.pack(side=tk.LEFT, fill=tk.Y, padx=5, pady=5)
     buttons_frame = tk.Frame(root)
     buttons_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+
+    return_home_button = tk.Button(root, text="Return to Home", command=return_to_home)
+    return_home_button.pack(padx=5, pady=5, fill=tk.X)
+
     title_font = tkFont.Font(size=10, weight="bold")
     data_font = tkFont.Font(size=9)
 
@@ -155,7 +166,7 @@ def main():
     for var in ['accel_x_var', 'accel_y_var', 'accel_z_var', 'gyro_x_var', 'gyro_y_var', 'gyro_z_var']:
         tk.Label(mpu_frame, textvariable=mpu_vars[var], anchor="w", font=data_font).pack(fill="x")
     for name, body in celestial_objects.items():
-        button = tk.Button(root, text=name, command=lambda body=body: button_command(body))
+        button = tk.Button(root, text=name, command=lambda body=body, name=name: button_command(body, name))
         button.pack(padx=5, pady=5, fill=tk.X)
 
     update_data()

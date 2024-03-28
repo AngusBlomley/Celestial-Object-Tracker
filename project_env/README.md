@@ -44,6 +44,7 @@ Navigate to the project directory:
 ```bash
 cd project_env
 ```
+
 Activate Virtual Enviroment:
 
 ```bash
@@ -55,6 +56,10 @@ Install the required Python packages:
 ```bash
 pip install -r requirements.txt
 ```
+
+### Calibration
+
+Any time when changing the position or orientation of the device requires it to be calibrated again. This can be done using the IMU_ZERO Example in the MPU_6050 library.
 
 ### Executing Program
 
