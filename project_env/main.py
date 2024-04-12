@@ -1,11 +1,14 @@
 import tkinter as tk
 from tkinter import font as tkFont
+from tkinter import ttk
 from skyfield.api import Loader, Topos, load
 import serial
 import time
 import cv2
 from PIL import Image, ImageTk
 import os
+
+
 
 #Declare Variables and initialize
 ser = serial.Serial('COM4', 9600, timeout=0.1)
@@ -26,6 +29,8 @@ accel_x, accel_y, accel_z = None, None, None
 gyro_x, gyro_y, gyro_z = None, None, None
 current_lat, current_lng, current_altitude, current_satellites = None, None, None, None
 
+
+
 #Placeholder data for when a GPS connection is unavailble for testing
 use_live_gps_data = True
 toggle_button = None
@@ -33,6 +38,8 @@ placeholder_lat = 51.5074
 placeholder_lng = -0.1278
 placeholder_altitude = 50  
 placeholder_satellites = 5  
+
+
 
 celestial_objects = {
     "Mercury": planets['mercury'],
@@ -46,6 +53,9 @@ celestial_objects = {
     "Sun": planets['sun']
 }
 
+
+
+
 def safe_read_line():
     try:
         return ser.readline().decode('utf-8').strip()
@@ -53,10 +63,16 @@ def safe_read_line():
         print(f"Error reading line: {e}")
         return None
     
+
+
+
 def allow_mpu_print():
     global print_mpu_data
     print_mpu_data = True  # Set the flag to True to allow printing
     root.after(100, allow_mpu_print)
+
+
+
 
 def update_data():
     global should_update
@@ -138,6 +154,9 @@ def update_data():
             gps_vars['sat_var'].set(f"Satellites: {placeholder_satellites}")
     root.after(1000, update_data)
 
+
+
+
 def track_celestial_object(body, lat, lng):
     t = ts.now()
     earth = planets['earth']
@@ -151,6 +170,9 @@ def track_celestial_object(body, lat, lng):
     send_str = f"MOT,{az_deg},{alt_deg}\n"
     ser.write(send_str.encode('utf-8'))
 
+
+
+
 def button_command(body, name):
     if current_lat is not None and current_lng is not None:
         track_celestial_object(body, current_lat, current_lng)
@@ -159,13 +181,17 @@ def button_command(body, name):
     else:
         print("GPS data not available.")
 
+
+
+
 def toggle_gps_data():
     global use_live_gps_data
     use_live_gps_data = not use_live_gps_data
     if use_live_gps_data:
-        toggle_button.config(text="Use Placeholder Data")
+        toggle_button.config(text="Placeholder Data")
     else:
         toggle_button.config(text="Use Live GPS Data")
+
 
 
 def return_to_home():
@@ -173,11 +199,17 @@ def return_to_home():
     send_str = "RTH\n"
     ser.write(send_str.encode('utf-8'))
 
+
+
+
 def on_closing():
     global should_update
     should_update = False  # Stop scheduling new updates
     root.destroy()
 
+
+
+# NEEDS UPDATE
 def capture_and_highlight_object(object_name):
     # Capture the image
     cap = cv2.VideoCapture(0)
@@ -185,14 +217,17 @@ def capture_and_highlight_object(object_name):
     cap.release()
 
     if ret:
-        # Here you would add your logic to find and highlight the object in the frame
-        # For simplicity, let's just draw a rectangle and annotate it
+        # add your logic to find and highlight the object in the frame
+        # For simplicity, draw a rectangle and annotate it
         cv2.rectangle(frame, (100, 100), (200, 200), (0, 255, 0), 2)
         cv2.putText(frame, object_name, (100, 95), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
         # Display the annotated image
         display_image(frame)
     
+
+
+
 def display_image(cv2image):
     # Convert the image to RGB (for Tkinter compatibility)
     cv2image = cv2.cvtColor(cv2image, cv2.COLOR_BGR2RGB)
@@ -200,11 +235,32 @@ def display_image(cv2image):
     imgtk = ImageTk.PhotoImage(image=img)
 
     # Display the image in the GUI
-    image_label = tk.Label(root, image=imgtk)
-    image_label.image = imgtk  # Keep a reference!
-    image_label.pack()
+    if not hasattr(display_image, 'frame_label'):
+        display_image.frame_label = tk.Label(root, image=imgtk)
+        display_image.frame_label.image = imgtk  # Keep a reference!
+        display_image.frame_label.pack(side=tk.LEFT, padx=10, pady=10)
+    else:
+        display_image.frame_label.configure(image=imgtk)
+        display_image.frame_label.image = imgtk
 
-import tkinter as tk
+
+
+
+def center_window(root, width=1280, height=720):
+    # Get the screen dimensions
+    screen_width = root.winfo_screenwidth()
+    screen_height = root.winfo_screenheight()
+
+    # Calculate x and y coordinates for the Tk root window
+    x = (screen_width - width) // 2
+    y = (screen_height - height) // 2
+
+    # Set the dimensions of the screen 
+    # and where it is placed
+    root.geometry(f'{width}x{height}+{x}+{y}')
+
+
+
 
 def show_loading_screen(root, num_tasks=100):
     loading_screen = tk.Toplevel(root)
@@ -263,47 +319,112 @@ def main():
     global should_update
 
     should_update = True
+    center_window(root, 1280, 740)
+
     gps_vars = {var: tk.StringVar() for var in ['lat_var', 'lng_var', 'alt_var', 'sat_var']}
     mpu_vars = {var: tk.StringVar() for var in ['accel_x_var', 'accel_y_var', 'accel_z_var', 'gyro_x_var', 'gyro_y_var', 'gyro_z_var']}
 
-    data_frame = tk.Frame(root, width=200)
-    data_frame.pack(side=tk.LEFT, fill=tk.Y, padx=5, pady=5)
-    buttons_frame = tk.Frame(root)
-    buttons_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
-
-    return_home_button = tk.Button(root, text="Return to Home", command=return_to_home)
-    return_home_button.pack(padx=5, pady=5, fill=tk.X)
-
-    toggle_button = tk.Button(root, text="Use Placeholder Data", command=toggle_gps_data)
-    toggle_button.pack(pady=10)
+    style = ttk.Style()
+    style.theme_use('clam')  # or 'alt', 'default', 'classic', 'vista'
 
 
-    title_font = tkFont.Font(size=10, weight="bold")
-    data_font = tkFont.Font(size=9)
+    # Define colors
+    bg_color = '#333333'  # Dark gray
+    text_color = '#FFFFFF'  # White
+    button_color = '#e4e4e4'  # Cadet Blue
+    frame_bg_color = '#444444'  # A slightly lighter shade of dark gray
+    root.configure(bg=bg_color)  # Set the background color for the root window
 
-    # Create labeled frames for GPS and MPU data with borders
-    gps_frame = tk.LabelFrame(data_frame, text="GPS Data", font=title_font, padx=5, pady=5)
-    gps_frame.pack(fill="both", expand="yes")
-    mpu_frame = tk.LabelFrame(data_frame, text="MPU Data", font=title_font, padx=5, pady=5)
-    mpu_frame.pack(fill="both", expand="yes")
+
+    # Define fonts
+    title_font = tkFont.Font(size=32, family="Myriad Pro")
+    subTitle_font = tkFont.Font(size=16, family="Myriad Pro")
+    data_font = tkFont.Font(size=14, family="Myriad Pro")
+    label_font = tkFont.Font(size=12, family="helvetica")
+
+    # Title
+    title_label = tk.Label(root, text="Celestial Object Tracker", font=title_font, fg=text_color, bg=bg_color, anchor="w")
+    title_label.pack(pady=10, padx=10, anchor="nw")
+
+
+    # Frame for Message
+    # Frame for Message
+    message_frame = tk.Frame(root, bg=frame_bg_color)
+    message_frame.place(relx=1, rely=0, anchor='ne', x=-10, y=30)
+
+    message_text = "Welcome to the Celestial Object Tracking Software! Please select a celestial object to track to\nfind out more about it!"
+    message_label = tk.Label(message_frame, text=message_text, font=label_font, fg=text_color, bg=frame_bg_color, justify="left")
+    message_label.pack(pady=10, padx=10, anchor="ne")
+
+
+
+
+    # Left Frame for Data
+    data_frame = tk.Frame(root, bg=frame_bg_color)
+    data_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=30)
+
+    data_label = tk.Label(data_frame, text="Data", font=subTitle_font, fg=text_color, bg=frame_bg_color)
+    data_label.pack(pady=10)
+
+
+    # GPS Frame
+    gps_frame = tk.LabelFrame(data_frame, text="GPS Data", font=data_font, fg=text_color, bg=frame_bg_color)
+    gps_frame.pack(fill="both", expand="yes", padx=10, pady=10)
+
+
+    # MPU Frame
+    mpu_frame = tk.LabelFrame(data_frame, text="MPU Data", font=data_font, fg=text_color, bg=frame_bg_color)
+    mpu_frame.pack(fill="both", expand="yes", padx=10, pady=10)
+
+
+    # Camera frame
+    camera_frame = tk.Frame(root, bg=frame_bg_color)
+    camera_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10, pady=30)
+
+
+    # Label for the camera frame
+    camera_label = tk.Label(camera_frame, text="Camera Frame", font=label_font, fg=text_color, bg=frame_bg_color)
+    camera_label.pack(pady=10)
+
+
+    # Right Frame for Buttons
+    buttons_frame = tk.Frame(root, bg=frame_bg_color)
+    buttons_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=False, padx=10, pady=30)
+
+    data_label = tk.Label(buttons_frame, text="Celestial Objects", font=subTitle_font, fg=text_color, bg=frame_bg_color)
+    data_label.pack(pady=10, padx=10)
+
+
+    # Button style
+    button_style = ttk.Style()
+    button_style.configure('TButton', padding=6, relief="flat", background=button_color)
 
     # Populate data_frame with GPS and MPU data labels
     tk.Label(data_frame, text="").pack()
     for var in ['lat_var', 'lng_var', 'alt_var', 'sat_var']:
-        tk.Label(gps_frame, textvariable=gps_vars[var], anchor="w", font=data_font).pack(fill="x")
+        tk.Label(gps_frame, textvariable=gps_vars[var], anchor="w", font=label_font, bg=frame_bg_color, fg=text_color).pack(fill="x", padx="10")
+    
     tk.Label(data_frame, text="").pack()
     for var in ['accel_x_var', 'accel_y_var', 'accel_z_var', 'gyro_x_var', 'gyro_y_var', 'gyro_z_var']:
-        tk.Label(mpu_frame, textvariable=mpu_vars[var], anchor="w", font=data_font).pack(fill="x")
+        tk.Label(mpu_frame, textvariable=mpu_vars[var], anchor="w", font=label_font, bg=frame_bg_color, fg=text_color).pack(fill="x", padx="10")
+        
     for name, body in celestial_objects.items():
-        button = tk.Button(root, text=name, command=lambda body=body, name=name: button_command(body, name))
+        button = ttk.Button(buttons_frame, text=name, command=lambda body=body, name=name: button_command(body, name))
         button.pack(padx=5, pady=5, fill=tk.X)
+    
+    capture_button = ttk.Button(buttons_frame, text="Capture", command=lambda: capture_and_highlight_object("Object"))
+    capture_button.pack(padx=5, pady=10, fill=tk.X)
+
+    return_home_button = ttk.Button(buttons_frame, text="Return to Home", command=return_to_home)
+    return_home_button.pack(padx=5, pady=10, fill=tk.X)
+
+    toggle_button = ttk.Button(buttons_frame, text="Placeholder Data", command=toggle_gps_data)
+    toggle_button.pack(padx=5, pady=10, fill=tk.X)
 
     show_loading_screen(root)  # Display the loading screen before the main application
     root.after(1000, update_data)
     root.mainloop()
-
     should_update = False  # Stop updates when the main loop exits
-
 
 if __name__ == "__main__":
     root.protocol("WM_DELETE_WINDOW", on_closing)  # Ensure proper closure handling
