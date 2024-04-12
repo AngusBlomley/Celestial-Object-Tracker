@@ -1,11 +1,13 @@
 import tkinter as tk
 from tkinter import font as tkFont
 from tkinter import ttk
+from tkinter import scrolledtext
 from skyfield.api import Loader, Topos, load
 import serial
 import time
 import cv2
 from PIL import Image, ImageTk
+import subprocess
 import os
 
 
@@ -201,8 +203,8 @@ def return_to_home():
 
 
 
-
 def on_closing():
+    
     global should_update
     should_update = False  # Stop scheduling new updates
     root.destroy()
@@ -346,18 +348,13 @@ def main():
     title_label = tk.Label(root, text="Celestial Object Tracker", font=title_font, fg=text_color, bg=bg_color, anchor="w")
     title_label.pack(pady=10, padx=10, anchor="nw")
 
-
-    # Frame for Message
     # Frame for Message
     message_frame = tk.Frame(root, bg=frame_bg_color)
-    message_frame.place(relx=1, rely=0, anchor='ne', x=-10, y=30)
+    message_frame.place(relx=1, rely=0, anchor='ne', x=-10, y=25)
 
     message_text = "Welcome to the Celestial Object Tracking Software! Please select a celestial object to track to\nfind out more about it!"
     message_label = tk.Label(message_frame, text=message_text, font=label_font, fg=text_color, bg=frame_bg_color, justify="left")
     message_label.pack(pady=10, padx=10, anchor="ne")
-
-
-
 
     # Left Frame for Data
     data_frame = tk.Frame(root, bg=frame_bg_color)
@@ -365,7 +362,6 @@ def main():
 
     data_label = tk.Label(data_frame, text="Data", font=subTitle_font, fg=text_color, bg=frame_bg_color)
     data_label.pack(pady=10)
-
 
     # GPS Frame
     gps_frame = tk.LabelFrame(data_frame, text="GPS Data", font=data_font, fg=text_color, bg=frame_bg_color)
