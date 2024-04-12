@@ -16,6 +16,8 @@ ts = loader.timescale()
 last_print_time = time.time()
 last_print_time = time.time()
 root = tk.Tk()
+root.withdraw()
+should_update = True  
 root.title("Celestial Object Tracker")
 observer_location = Topos(latitude_degrees=51.5074, longitude_degrees=-0.1278)
 current_lat = None
@@ -57,83 +59,84 @@ def allow_mpu_print():
     root.after(100, allow_mpu_print)
 
 def update_data():
+    global should_update
     global current_lat, current_lng, current_altitude, current_satellites
     global accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z
     global print_mpu_data
     global last_print_time
 
-    if use_live_gps_data:
-        line = safe_read_line()
-        if line:
-            try:
-                if line.startswith("MPU:"):
-                    # Remove "MPU: " prefix and then split the line
-                    parts = line.replace("MPU: ", "").split(',')
-                    if len(parts) == 6:  # Ensure there are exactly 6 parts for the MPU data
-                        accel_x, accel_y, accel_z = float(parts[0]), float(parts[1]), float(parts[2])
-                        gyro_x, gyro_y, gyro_z = float(parts[3]), float(parts[4]), float(parts[5])
+    if should_update:
+        if use_live_gps_data:
+            line = safe_read_line()
+            if line:
+                try:
+                    if line.startswith("MPU:"):
+                        # Remove "MPU: " prefix and then split the line
+                        parts = line.replace("MPU: ", "").split(',')
+                        if len(parts) == 6:  # Ensure there are exactly 6 parts for the MPU data
+                            accel_x, accel_y, accel_z = float(parts[0]), float(parts[1]), float(parts[2])
+                            gyro_x, gyro_y, gyro_z = float(parts[3]), float(parts[4]), float(parts[5])
 
-                        # Update the GUI elements with new data
-                        mpu_vars['accel_x_var'].set(f"Accel X: {accel_x}")
-                        mpu_vars['accel_y_var'].set(f"Accel Y: {accel_y}")
-                        mpu_vars['accel_z_var'].set(f"Accel Z: {accel_z}")
-                        mpu_vars['gyro_x_var'].set(f"Gyro X: {gyro_x}")
-                        mpu_vars['gyro_y_var'].set(f"Gyro Y: {gyro_y}")
-                        mpu_vars['gyro_z_var'].set(f"Gyro Z: {gyro_z}")
+                            # Update the GUI elements with new data
+                            mpu_vars['accel_x_var'].set(f"Accel X: {accel_x}")
+                            mpu_vars['accel_y_var'].set(f"Accel Y: {accel_y}")
+                            mpu_vars['accel_z_var'].set(f"Accel Z: {accel_z}")
+                            mpu_vars['gyro_x_var'].set(f"Gyro X: {gyro_x}")
+                            mpu_vars['gyro_y_var'].set(f"Gyro Y: {gyro_y}")
+                            mpu_vars['gyro_z_var'].set(f"Gyro Z: {gyro_z}")
 
+                        else:
+                            print("Insufficient MPU data elements.")
+                    elif "Lat:" in line:
+                        current_lat = float(line.split("Lat: ")[1])
+                        gps_vars['lat_var'].set(f"Latitude: {current_lat}")
+                    elif "Lng:" in line:
+                        current_lng = float(line.split("Lng: ")[1])
+                        gps_vars['lng_var'].set(f"Longitude: {current_lng}")
+                    elif "Altitude:" in line:
+                        alt_data = line.split("Altitude: ")[1]
+                        # Remove the " Meters" text to isolate the numeric value
+                        alt_data = alt_data.replace(" Meters", "")
+                        try:
+                            current_altitude = float(alt_data)
+                            gps_vars['alt_var'].set(f"Altitude: {current_altitude} Meters")
+                        except ValueError:
+                        # Handle the case where alt_data cannot be converted to float
+                            print(f"Could not convert altitude to float: '{alt_data}'")
+                            gps_vars['alt_var'].set("Altitude data is not valid.")
+                    elif "Satellites:" in line:
+                        sat_data = line.split("Satellites: ")[1]
+                        if sat_data != " data is not valid.":
+                            current_satellites = int(sat_data)
+                            gps_vars['sat_var'].set(f"Satellites: {current_satellites}")
+                        else:
+                            gps_vars['sat_var'].set(sat_data)
                     else:
-                        print("Insufficient MPU data elements.")
-                elif "Lat:" in line:
-                    current_lat = float(line.split("Lat: ")[1])
-                    gps_vars['lat_var'].set(f"Latitude: {current_lat}")
-                elif "Lng:" in line:
-                    current_lng = float(line.split("Lng: ")[1])
-                    gps_vars['lng_var'].set(f"Longitude: {current_lng}")
-                elif "Altitude:" in line:
-                    alt_data = line.split("Altitude: ")[1]
-                    # Remove the " Meters" text to isolate the numeric value
-                    alt_data = alt_data.replace(" Meters", "")
-                    try:
-                        current_altitude = float(alt_data)
-                        gps_vars['alt_var'].set(f"Altitude: {current_altitude} Meters")
-                    except ValueError:
-                    # Handle the case where alt_data cannot be converted to float
-                        print(f"Could not convert altitude to float: '{alt_data}'")
-                        gps_vars['alt_var'].set("Altitude data is not valid.")
-                elif "Satellites:" in line:
-                    sat_data = line.split("Satellites: ")[1]
-                    if sat_data != " data is not valid.":
-                        current_satellites = int(sat_data)
-                        gps_vars['sat_var'].set(f"Satellites: {current_satellites}")
-                    else:
-                        gps_vars['sat_var'].set(sat_data)
-                else:
-                    print(f"Unrecognized line format: {line}")
-            except ValueError as e:
-                print(f"Value parsing error: {e}")
-            except Exception as e:
-                print(f"Unexpected error: {e}")
+                        print(f"Unrecognized line format: {line}")
+                except ValueError as e:
+                    print(f"Value parsing error: {e}")
+                except Exception as e:
+                    print(f"Unexpected error: {e}")
 
-        # Check if all required data (GPS and MPU) have been updated
-        if current_lat is not None and current_lng is not None and current_altitude is not None and current_satellites is not None:
-            pass
-        if all(v is not None for v in [accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z]):
-            pass
+            # Check if all required data (GPS and MPU) have been updated
+            if current_lat is not None and current_lng is not None and current_altitude is not None and current_satellites is not None:
+                pass
+            if all(v is not None for v in [accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z]):
+                pass
+            else:
+                print("Waiting for complete data...")
         else:
-            print("Waiting for complete data...")
-    else:
-        # Use placeholder data
-        current_lat = placeholder_lat
-        current_lng = placeholder_lng
-        current_altitude = placeholder_altitude
-        current_satellites = placeholder_satellites
-        # Update the GUI elements with placeholder data
-        gps_vars['lat_var'].set(f"Latitude: {placeholder_lat}")
-        gps_vars['lng_var'].set(f"Longitude: {placeholder_lng}")
-        gps_vars['alt_var'].set(f"Altitude: {placeholder_altitude} Meters")
-        gps_vars['sat_var'].set(f"Satellites: {placeholder_satellites}")
-
-    root.after(100, update_data)
+            # Use placeholder data
+            current_lat = placeholder_lat
+            current_lng = placeholder_lng
+            current_altitude = placeholder_altitude
+            current_satellites = placeholder_satellites
+            # Update the GUI elements with placeholder data
+            gps_vars['lat_var'].set(f"Latitude: {placeholder_lat}")
+            gps_vars['lng_var'].set(f"Longitude: {placeholder_lng}")
+            gps_vars['alt_var'].set(f"Altitude: {placeholder_altitude} Meters")
+            gps_vars['sat_var'].set(f"Satellites: {placeholder_satellites}")
+    root.after(1000, update_data)
 
 def track_celestial_object(body, lat, lng):
     t = ts.now()
@@ -170,6 +173,11 @@ def return_to_home():
     send_str = "RTH\n"
     ser.write(send_str.encode('utf-8'))
 
+def on_closing():
+    global should_update
+    should_update = False  # Stop scheduling new updates
+    root.destroy()
+
 def capture_and_highlight_object(object_name):
     # Capture the image
     cap = cv2.VideoCapture(0)
@@ -196,11 +204,68 @@ def display_image(cv2image):
     image_label.image = imgtk  # Keep a reference!
     image_label.pack()
 
+import tkinter as tk
+
+def show_loading_screen(root, num_tasks=100):
+    loading_screen = tk.Toplevel(root)
+    loading_screen.overrideredirect(True)
+
+    # Load the image
+    image = tk.PhotoImage(file="images/loading_page.png")  # Load the original image
+
+    # Calculate the desired size for the image
+    desired_width = 640
+    desired_height = 360
+
+    # Resize the image
+    resized_image = image.subsample(round(image.width() / desired_width), round(image.height() / desired_height))
+
+    # Create a label to display the image
+    image_label = tk.Label(loading_screen, image=resized_image)
+    image_label.image = resized_image  # Keep a reference to the image to prevent garbage collection
+    image_label.pack(padx=0, pady=0)
+
+    # Setup the loading bar
+    canvas = tk.Canvas(loading_screen, width=400, height=20)
+    canvas.place(relx=0.5, rely=0.5, anchor=tk.CENTER, y=100) 
+    loading_bar = canvas.create_rectangle(0, 0, 0, 20, fill="green", outline="white", width=0.1)
+
+    # Function to update the loading bar
+    def update_progress(step):
+        bar_width = 400 * step // num_tasks  # Calculate width of the bar based on current step
+        canvas.coords(loading_bar, 0, 0, bar_width, 20)  # Update bar size
+        loading_screen.update_idletasks()  # Refresh the loading screen
+        if step < num_tasks:
+            # Schedule the next update
+            root.after(17, lambda: update_progress(step + 1))
+        else:
+            # Close the loading screen and show the main window once loading is complete
+            loading_screen.destroy()
+            root.deiconify()
+
+    # Start the progress updates
+    update_progress(0)
+
+    # Center the loading screen
+    loading_screen.update_idletasks()  # Ensure that the window dimensions are calculated
+    screen_width = loading_screen.winfo_screenwidth()
+    screen_height = loading_screen.winfo_screenheight()
+    x = (screen_width - loading_screen.winfo_width()) // 2
+    y = (screen_height - loading_screen.winfo_height()) // 2
+    loading_screen.geometry(f"+{x}+{y}")
+
+    return loading_screen
+
+
 
 def main():
     global toggle_button, gps_vars, mpu_vars
+    global should_update
+
+    should_update = True
     gps_vars = {var: tk.StringVar() for var in ['lat_var', 'lng_var', 'alt_var', 'sat_var']}
     mpu_vars = {var: tk.StringVar() for var in ['accel_x_var', 'accel_y_var', 'accel_z_var', 'gyro_x_var', 'gyro_y_var', 'gyro_z_var']}
+
     data_frame = tk.Frame(root, width=200)
     data_frame.pack(side=tk.LEFT, fill=tk.Y, padx=5, pady=5)
     buttons_frame = tk.Frame(root)
@@ -233,8 +298,13 @@ def main():
         button = tk.Button(root, text=name, command=lambda body=body, name=name: button_command(body, name))
         button.pack(padx=5, pady=5, fill=tk.X)
 
-    update_data()
+    show_loading_screen(root)  # Display the loading screen before the main application
+    root.after(1000, update_data)
     root.mainloop()
 
+    should_update = False  # Stop updates when the main loop exits
+
+
 if __name__ == "__main__":
+    root.protocol("WM_DELETE_WINDOW", on_closing)  # Ensure proper closure handling
     main()
