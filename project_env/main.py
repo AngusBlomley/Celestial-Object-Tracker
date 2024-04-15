@@ -27,8 +27,7 @@ root.title("Celestial Object Tracker")
 observer_location = Topos(latitude_degrees=51.5074, longitude_degrees=-0.1278)
 current_lat = None
 current_lng = None
-accel_x, accel_y, accel_z = None, None, None
-gyro_x, gyro_y, gyro_z = None, None, None
+roll, pitch, yaw = None, None, None
 current_lat, current_lng, current_altitude, current_satellites = None, None, None, None
 
 
@@ -36,12 +35,10 @@ current_lat, current_lng, current_altitude, current_satellites = None, None, Non
 #Placeholder data for when a GPS connection is unavailble for testing
 use_live_gps_data = True
 toggle_button = None
-placeholder_lat = 51.5074
-placeholder_lng = -0.1278
+placeholder_lat = 51.5324
+placeholder_lng = 0.07582
 placeholder_altitude = 50  
 placeholder_satellites = 5  
-
-
 
 celestial_objects = {
     "Mercury": planets['mercury'],
@@ -79,7 +76,7 @@ def allow_mpu_print():
 def update_data():
     global should_update
     global current_lat, current_lng, current_altitude, current_satellites
-    global accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z
+    global roll, pitch, yaw
     global print_mpu_data
     global last_print_time
 
@@ -88,20 +85,21 @@ def update_data():
             line = safe_read_line()
             if line:
                 try:
-                    if line.startswith("MPU:"):
-                        # Remove "MPU: " prefix and then split the line
+                    if line.startswith("MPU: "):
+                        # Split the line by commas and extract the values
                         parts = line.replace("MPU: ", "").split(',')
-                        if len(parts) == 6:  # Ensure there are exactly 6 parts for the MPU data
-                            accel_x, accel_y, accel_z = float(parts[0]), float(parts[1]), float(parts[2])
-                            gyro_x, gyro_y, gyro_z = float(parts[3]), float(parts[4]), float(parts[5])
+                        if len(parts) == 3:  # Ensure there are exactly 3 parts for the MPU data
+                            # Extract roll, pitch, and yaw values
+                            roll = float(parts[0])
+                            pitch = float(parts[1])
+                            yaw = float(parts[2])
+                            
+                            # Update GUI elements with new data
+                            mpu_vars['roll'].set(f"Roll: {roll}")
+                            mpu_vars['pitch'].set(f"Pitch: {pitch}")
+                            mpu_vars['yaw'].set(f"Yaw: {yaw}")
 
-                            # Update the GUI elements with new data
-                            mpu_vars['accel_x_var'].set(f"Accel X: {accel_x}")
-                            mpu_vars['accel_y_var'].set(f"Accel Y: {accel_y}")
-                            mpu_vars['accel_z_var'].set(f"Accel Z: {accel_z}")
-                            mpu_vars['gyro_x_var'].set(f"Gyro X: {gyro_x}")
-                            mpu_vars['gyro_y_var'].set(f"Gyro Y: {gyro_y}")
-                            mpu_vars['gyro_z_var'].set(f"Gyro Z: {gyro_z}")
+                            print(roll, pitch, yaw)
 
                         else:
                             print("Insufficient MPU data elements.")
@@ -139,7 +137,7 @@ def update_data():
             # Check if all required data (GPS and MPU) have been updated
             if current_lat is not None and current_lng is not None and current_altitude is not None and current_satellites is not None:
                 pass
-            if all(v is not None for v in [accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z]):
+            if all(v is not None for v in [roll, pitch, yaw]):
                 pass
             else:
                 print("Waiting for complete data...")
@@ -154,7 +152,7 @@ def update_data():
             gps_vars['lng_var'].set(f"Longitude: {placeholder_lng}")
             gps_vars['alt_var'].set(f"Altitude: {placeholder_altitude} Meters")
             gps_vars['sat_var'].set(f"Satellites: {placeholder_satellites}")
-    root.after(1000, update_data)
+    root.after(100, update_data)
 
 
 
@@ -324,7 +322,7 @@ def main():
     center_window(root, 1280, 740)
 
     gps_vars = {var: tk.StringVar() for var in ['lat_var', 'lng_var', 'alt_var', 'sat_var']}
-    mpu_vars = {var: tk.StringVar() for var in ['accel_x_var', 'accel_y_var', 'accel_z_var', 'gyro_x_var', 'gyro_y_var', 'gyro_z_var']}
+    mpu_vars = {var: tk.StringVar() for var in ['roll', 'pitch', 'yaw']}
 
     style = ttk.Style()
     style.theme_use('clam')  # or 'alt', 'default', 'classic', 'vista'
@@ -401,7 +399,7 @@ def main():
         tk.Label(gps_frame, textvariable=gps_vars[var], anchor="w", font=label_font, bg=frame_bg_color, fg=text_color).pack(fill="x", padx="10")
     
     tk.Label(data_frame, text="").pack()
-    for var in ['accel_x_var', 'accel_y_var', 'accel_z_var', 'gyro_x_var', 'gyro_y_var', 'gyro_z_var']:
+    for var in ['roll', 'pitch','yaw']:
         tk.Label(mpu_frame, textvariable=mpu_vars[var], anchor="w", font=label_font, bg=frame_bg_color, fg=text_color).pack(fill="x", padx="10")
         
     for name, body in celestial_objects.items():
