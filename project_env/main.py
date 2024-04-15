@@ -98,8 +98,6 @@ def update_data():
                             mpu_vars['pitch'].set(f"Pitch: {pitch}")
                             mpu_vars['yaw'].set(f"Yaw: {yaw}")
 
-                            print(roll, pitch, yaw)
-
                         else:
                             print("Insufficient MPU data elements.")
                     elif "Lat:" in line:
@@ -139,6 +137,7 @@ def update_data():
             if all(v is not None for v in [roll, pitch, yaw]):
                 pass
             else:
+                print("Calibrating gyro drift...")
                 print("Waiting for complete data...")
         else:
             # Use placeholder data

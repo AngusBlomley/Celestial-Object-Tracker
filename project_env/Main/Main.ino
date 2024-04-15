@@ -201,7 +201,6 @@ void processMPU() {
 }
 
 
-
 void calibrateGyroForDrift() {
     long startTime = millis();
     long endTime = startTime + calibrationDuration;
