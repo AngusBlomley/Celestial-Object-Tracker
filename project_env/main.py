@@ -27,11 +27,6 @@ current_lng = None
 roll, pitch, yaw = None, None, None
 current_lat, current_lng, current_altitude, current_satellites = None, None, None, None
 
-# Calculate steps per degree
-STEPS_PER_REV = 1600  
-GEAR_RATIO = 2        
-STEPS_PER_DEGREE = (STEPS_PER_REV * GEAR_RATIO) / 360.0
-
 
 
 #Placeholder data for when a GPS connection is unavailble for testing
@@ -160,32 +155,18 @@ def update_data():
 
 
 
-def track_celestial_object(body, observer_lat, observer_lng):
+def track_celestial_object(body, lat, lng):
     t = ts.now()
     earth = planets['earth']
-    observer_location = Topos(latitude_degrees=observer_lat, longitude_degrees=observer_lng)
+    observer_location = Topos(latitude_degrees=lat, longitude_degrees=lng)
     observer = earth + observer_location
     astrometric = observer.at(t).observe(body)
     alt, az, dist = astrometric.apparent().altaz()
-
-    # Adjust azimuth and elevation based on device orientation (yaw, pitch)
-    adjusted_azimuth = az.degrees - yaw  # Correct for yaw
-    adjusted_elevation = alt.degrees - pitch  # Correct for pitch
-
-    # Normalize azimuth to ensure it remains within 0-360 degrees
-    adjusted_azimuth %= 360
-
-    # Convert azimuth and elevation to motor steps
-    azimuth_steps = adjusted_azimuth * STEPS_PER_DEGREE
-    elevation_steps = adjusted_elevation * STEPS_PER_DEGREE
-
-    # Send commands to stepper motors (implement your motor control logic)
-    send_to_motors(azimuth_steps, elevation_steps)
-
-def send_to_motors(azimuth_steps, elevation_steps):
-    print(f"Commanding motors to Azimuth: {azimuth_steps} steps, Elevation: {elevation_steps} steps")
-    # Here you would add your code to control the stepper motors based on the calculated steps.
-
+    alt_deg = int(alt.degrees)
+    az_deg = int(az.degrees)
+    # Ensure the command is formatted as "MOT,azimuth,elevation\n"
+    send_str = f"MOT,{az_deg},{alt_deg}\n"
+    ser.write(send_str.encode('utf-8'))
 
 
 
