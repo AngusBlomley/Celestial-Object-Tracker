@@ -1,14 +1,11 @@
 import tkinter as tk
 from tkinter import font as tkFont
 from tkinter import ttk
-from tkinter import scrolledtext
 from skyfield.api import Loader, Topos, load
 import serial
 import time
 import cv2
 from PIL import Image, ImageTk
-import subprocess
-import os
 
 
 
@@ -39,6 +36,8 @@ placeholder_lat = 51.5324
 placeholder_lng = 0.07582
 placeholder_altitude = 50  
 placeholder_satellites = 5  
+
+
 
 celestial_objects = {
     "Mercury": planets['mercury'],
@@ -202,14 +201,15 @@ def return_to_home():
 
 
 def on_closing():
-    
     global should_update
     should_update = False  # Stop scheduling new updates
     root.destroy()
 
 
 
-# NEEDS UPDATE
+############ NEEDS UPDATE ##############
+############ NEEDS UPDATE ##############
+############ NEEDS UPDATE ##############
 def capture_and_highlight_object(object_name):
     # Capture the image
     cap = cv2.VideoCapture(0)
