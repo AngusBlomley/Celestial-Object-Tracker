@@ -10,7 +10,7 @@ from PIL import Image, ImageTk
 
 
 #Declare Variables and initialize
-ser = serial.Serial('COM4', 9600, timeout=0.1)
+ser = serial.Serial('COM3', 9600, timeout=0.1)
 time.sleep(2)
 loader = Loader('~/.skyfield-data')
 planets = loader('de421.bsp')
@@ -216,7 +216,7 @@ def capture_and_highlight_object(object_name):
     cap.release()
 
     if ret:
-        # add your logic to find and highlight the object in the frame
+        # add  logic to find and highlight the object in the frame
         # For simplicity, draw a rectangle and annotate it
         cv2.rectangle(frame, (100, 100), (200, 200), (0, 255, 0), 2)
         cv2.putText(frame, object_name, (100, 95), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
@@ -234,13 +234,15 @@ def display_image(cv2image):
     imgtk = ImageTk.PhotoImage(image=img)
 
     # Display the image in the GUI
-    if not hasattr(display_image, 'frame_label'):
-        display_image.frame_label = tk.Label(root, image=imgtk)
-        display_image.frame_label.image = imgtk  # Keep a reference!
-        display_image.frame_label.pack(side=tk.LEFT, padx=10, pady=10)
-    else:
-        display_image.frame_label.configure(image=imgtk)
-        display_image.frame_label.image = imgtk
+    if not hasattr(display_image, 'Capture Frame'):
+        if not hasattr(display_image, 'frame_label'):
+            display_image.frame_label = tk.Label(display_image.capture_frame, image=imgtk) # `display_image.capture_frame` is the parent of this label
+            display_image.frame_label.image = imgtk  # Keep a reference!
+            display_image.frame_label.pack(expand=True, padx=10, pady=10)
+        else:
+            # If it exists, just update the image
+            display_image.frame_label.configure(image=imgtk)
+            display_image.frame_label.image = imgtk
 
 
 
@@ -353,12 +355,16 @@ def main():
     message_label = tk.Label(message_frame, text=message_text, font=label_font, fg=text_color, bg=frame_bg_color, justify="left")
     message_label.pack(pady=10, padx=10, anchor="ne")
 
+    fixed_width = 200 
+
     # Left Frame for Data
-    data_frame = tk.Frame(root, bg=frame_bg_color)
-    data_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=30)
+    data_frame = tk.Frame(root, bg=frame_bg_color, width=fixed_width)
+    data_frame.pack_propagate(False)  # Prevent the frame from resizing to fit its children
+    data_frame.pack(side=tk.LEFT, fill=tk.Y, expand=False, padx=10, pady=30)
 
     data_label = tk.Label(data_frame, text="Data", font=subTitle_font, fg=text_color, bg=frame_bg_color)
     data_label.pack(pady=10)
+
 
     # GPS Frame
     gps_frame = tk.LabelFrame(data_frame, text="GPS Data", font=data_font, fg=text_color, bg=frame_bg_color)
@@ -370,15 +376,13 @@ def main():
     mpu_frame.pack(fill="both", expand="yes", padx=10, pady=10)
 
 
-    # Camera frame
-    camera_frame = tk.Frame(root, bg=frame_bg_color)
-    camera_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10, pady=30)
+   # Create the Capture Frame container
+    display_image.capture_frame = tk.Frame(root, bg=frame_bg_color)
+    display_image.capture_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10, pady=30)
 
-
-    # Label for the camera frame
-    camera_label = tk.Label(camera_frame, text="Camera Frame", font=label_font, fg=text_color, bg=frame_bg_color)
-    camera_label.pack(pady=10)
-
+    # Add a label for the Capture Frame title
+    capture_label = tk.Label(display_image.capture_frame, text="Capture Frame", font=subTitle_font, fg=text_color, bg=frame_bg_color)
+    capture_label.pack(pady=10, padx=10)
 
     # Right Frame for Buttons
     buttons_frame = tk.Frame(root, bg=frame_bg_color)
