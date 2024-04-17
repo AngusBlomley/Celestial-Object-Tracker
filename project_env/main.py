@@ -10,7 +10,7 @@ from PIL import Image, ImageTk
 
 
 #Declare Variables and initialize
-ser = serial.Serial('COM3', 9600, timeout=0.1)
+ser = serial.Serial('/dev/ttyACM0', 9600, timeout=0.1)
 time.sleep(2)
 loader = Loader('~/.skyfield-data')
 planets = loader('de421.bsp')

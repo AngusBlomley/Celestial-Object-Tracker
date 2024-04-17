@@ -1,0 +1,4 @@
+pyserial>=3.4
+skyfield>=1.13
+numpy>=1.18
+matplotlib>=3.1

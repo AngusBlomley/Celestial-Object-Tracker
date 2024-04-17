@@ -1,0 +1,11 @@
+certifi==2024.2.2
+future==1.0.0
+iso8601==2.1.0
+jplephem==2.21
+numpy==1.26.4
+opencv-python==4.9.0.80
+pillow==10.3.0
+PyYAML==6.0.1
+serial==0.0.97
+sgp4==2.23
+skyfield==1.48
